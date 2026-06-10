@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+body{
+  font-family:Poppins;
+  background:#ffeaf4;
+  padding:20px;
+}
+
+.login-box, .dashboard{
+  max-width:500px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:15px;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  background:#ff4f9a;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+.card{
+  background:#fff0f6;
+  padding:10px;
+  margin:10px 0;
+  border-radius:10px;
+}
+
+img{
+  width:100%;
+  border-radius:10px;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box" id="loginBox">
+  <h2>Admin Login 🔐</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
+
+<div class="dashboard" id="dashboard" style="display:none;">
+  <h2>Applications 📋</h2>
+  <div id="list"></div>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBmkQ7GBHYDyQpwhjaEZS8ayQcwwaAV_o0",
+  authDomain: "katlegoapplications-b3cf5.firebaseapp.com",
+  projectId: "katlegoapplications-b3cf5",
+  storageBucket: "katlegoapplications-b3cf5.firebasestorage.app",
+  messagingSenderId: "513897608315",
+  appId: "1:513897608315:web:33c45983e083b6740e1ede",
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* LOGIN */
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value,
+    password.value
+  )
+  .then(()=>{
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    loadApps();
+  })
+  .catch(err=>{
+    alert("Login failed");
+  });
+}
+
+/* LOGOUT */
+function logout(){
+  auth.signOut().then(()=>{
+    location.reload();
+  });
+}
+
+/* LOAD APPLICATIONS */
+function loadApps(){
+  db.collection("applications")
+  .orderBy("time","desc")
+  .onSnapshot(snapshot=>{
+
+    list.innerHTML="";
+
+    snapshot.forEach(doc=>{
+      let d = doc.data();
+
+      list.innerHTML += `
+        <div class="card">
+          <b>${d.name}</b><br>
+          ${d.email}<br>
+          ${d.phone}<br><br>
+
+          <b>Intentions:</b> ${d.intentions}<br>
+          <b>Date:</b> ${d.date}<br>
+          <b>Status:</b> ${d.status || "pending"}<br>
+
+          ${d.image ? `<img src="${d.image}">` : ""}
+
+          <button onclick="approve('${doc.id}')">Approve 💕</button>
+          <button onclick="reject('${doc.id}')">Reject 💔</button>
+        </div>
+      `;
+    });
+  });
+}
+
+/* APPROVE */
+function approve(id){
+  db.collection("applications").doc(id).update({
+    status:"approved"
+  });
+}
+
+/* REJECT */
+function reject(id){
+  db.collection("applications").doc(id).update({
+    status:"rejected"
+  });
+}
+
+/* AUTO CHECK LOGIN */
+auth.onAuthStateChanged(user=>{
+  if(user){
+    loginBox.style.display="none";
+    dashboard.style.display="block";
+    loadApps();
+  }
+});
+</script>
+
+</body>
+</html>
